@@ -2,6 +2,9 @@ from http.server import BaseHTTPRequestHandler
 import os
 import json
 import psycopg
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 TABLE_SQL = """
@@ -49,10 +52,6 @@ class handler(BaseHTTPRequestHandler):
         except Exception as e:
             self._write_json(500, {"ok": False, "error": str(e)})
 
-if __name__ == "__main__":
-    from http.server import HTTPServer
-    HTTPServer(("localhost", 3000), handler).serve_forever()
-
     def do_POST(self):
         length = int(self.headers.get("Content-Length", "0"))
         raw = self.rfile.read(length) if length > 0 else b"{}"
@@ -77,3 +76,7 @@ if __name__ == "__main__":
             })
         except Exception as e:
             self._write_json(500, {"ok": False, "error": str(e)})
+
+if __name__ == "__main__":
+    from http.server import HTTPServer
+    HTTPServer(("localhost", 3000), handler).serve_forever()
