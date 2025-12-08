@@ -77,6 +77,69 @@ class handler(BaseHTTPRequestHandler):
         except Exception as e:
             self._write_json(500, {"ok": False, "error": str(e)})
 
+    def do_PUT(self):
+        length = int(self.headers.get("Content-Length", "0"))
+        raw = self.rfile.read(length) if length > 0 else b"{}"
+        try:
+            payload = json.loads(raw.decode("utf-8"))
+        except Exception:
+            payload = {}
+        try:
+            id_val = int(payload.get("id"))
+        except Exception:
+            id_val = 0
+        title = (payload.get("title") or "").strip()
+        if id_val <= 0 or not title:
+            self._write_json(400, {"ok": False, "error": "id e title são obrigatórios"})
+            return
+        try:
+            with self._connect() as conn:
+                with conn.cursor() as cur:
+                    cur.execute(TABLE_SQL)
+                    cur.execute(
+                        "UPDATE routines SET title = %s WHERE id = %s RETURNING id, title, created_at",
+                        (title, id_val),
+                    )
+                    row = cur.fetchone()
+                    conn.commit()
+            if not row:
+                self._write_json(404, {"ok": False, "error": "rotina não encontrada"})
+                return
+            self._write_json(200, {
+                "ok": True,
+                "item": {"id": row[0], "title": row[1], "created_at": row[2].isoformat()},
+            })
+        except Exception as e:
+            self._write_json(500, {"ok": False, "error": str(e)})
+
+    def do_DELETE(self):
+        length = int(self.headers.get("Content-Length", "0"))
+        raw = self.rfile.read(length) if length > 0 else b"{}"
+        try:
+            payload = json.loads(raw.decode("utf-8"))
+        except Exception:
+            payload = {}
+        try:
+            id_val = int(payload.get("id"))
+        except Exception:
+            id_val = 0
+        if id_val <= 0:
+            self._write_json(400, {"ok": False, "error": "id é obrigatório"})
+            return
+        try:
+            with self._connect() as conn:
+                with conn.cursor() as cur:
+                    cur.execute(TABLE_SQL)
+                    cur.execute("DELETE FROM routines WHERE id = %s RETURNING id", (id_val,))
+                    row = cur.fetchone()
+                    conn.commit()
+            if not row:
+                self._write_json(404, {"ok": False, "error": "rotina não encontrada"})
+                return
+            self._write_json(200, {"ok": True, "deleted_id": row[0]})
+        except Exception as e:
+            self._write_json(500, {"ok": False, "error": str(e)})
+
 if __name__ == "__main__":
     from http.server import HTTPServer
     HTTPServer(("localhost", 3000), handler).serve_forever()

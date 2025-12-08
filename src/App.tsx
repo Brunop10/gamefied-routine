@@ -48,7 +48,42 @@ function App() {
         ) : (
           <ul>
             {routines.map((r) => (
-              <li key={r.id}>{r.title} — {new Date(r.created_at).toLocaleString()}</li>
+              <li key={r.id} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <span>{r.title} — {new Date(r.created_at).toLocaleString()}</span>
+                <button
+                  onClick={async () => {
+                    const next = window.prompt('Novo título', r.title)?.trim()
+                    if (!next) return
+                    const res = await fetch(`${API_BASE}/api/routines`, {
+                      method: 'PUT',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ id: r.id, title: next }),
+                    })
+                    const j = await res.json()
+                    if (j?.ok && j.item) {
+                      setRoutines((prev) => prev.map((x) => x.id === r.id ? j.item : x))
+                    }
+                  }}
+                >
+                  Editar
+                </button>
+                <button
+                  onClick={async () => {
+                    if (!window.confirm('Excluir esta rotina?')) return
+                    const res = await fetch(`${API_BASE}/api/routines`, {
+                      method: 'DELETE',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ id: r.id }),
+                    })
+                    const j = await res.json()
+                    if (j?.ok) {
+                      setRoutines((prev) => prev.filter((x) => x.id !== r.id))
+                    }
+                  }}
+                >
+                  Excluir
+                </button>
+              </li>
             ))}
           </ul>
         )}
