@@ -73,8 +73,12 @@ class handler(BaseHTTPRequestHandler):
         url = self._get_db_url()
         if not url:
             raise RuntimeError("DATABASE_URL/NEON_DATABASE_URL não configurado")
+        # Limpa espaços em branco/newlines que podem aparecer ao colar a URL
+        url = url.strip().replace("\n", "").replace("\r", "")
+        # Anexa sslmode=require com segurança (preserva query params existentes)
         if "sslmode" not in url:
-            url = f"{url}?sslmode=require"
+            sep = "&" if "?" in url else "?"
+            url = f"{url}{sep}sslmode=require"
         return psycopg.connect(url)
 
     def _ensure_schema(self, cur):
