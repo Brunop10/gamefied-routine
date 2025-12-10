@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Header from './components/Header'
 import Navbar, { type NavItem } from './components/Navbar'
 import Screen from './components/Screen'
@@ -6,6 +6,8 @@ import HomePage from './pages/HomePage'
 import TasksPage from './pages/TasksPage'
 import SchedulePage from './pages/SchedulePage.tsx'
 import AchievementsPage from './pages/AchievementsPage'
+import LoginPage from './pages/LoginPage'
+import { getMe, logout, type User } from './auth/api'
 
 type Page = 'home' | 'tasks' | 'schedule' | 'achievements'
 
@@ -18,6 +20,26 @@ const NAV_ITEMS: Array<NavItem & { key: Page }> = [
 
 export default function AppLayout() {
   const [active, setActive] = useState<Page>('home')
+  const [user, setUser] = useState<User | null>(null)
+  const [authLoading, setAuthLoading] = useState(true)
+
+  useEffect(() => {
+    void (async () => {
+      const u = await getMe()
+      setUser(u)
+      setAuthLoading(false)
+    })()
+  }, [])
+
+  async function handleLogout() {
+    try {
+      await logout()
+    } catch (e) {
+      // ignore
+    }
+    setUser(null)
+    setActive('home')
+  }
 
   const content = useMemo(() => {
     switch (active) {
@@ -49,17 +71,26 @@ export default function AppLayout() {
     }
   }, [active])
 
-  return (
-    <div style={styles.shell}>
-      <Header title={content.title} subtitle={content.hint} />
-
+  const showContent = authLoading ? (
+    <div style={styles.loading}>Carregando...</div>
+  ) : user ? (
+    <>
+      <Header title={content.title} subtitle={content.hint} user={user} onLogout={handleLogout} />
       <Screen>
         <PageComponent />
       </Screen>
-
       <Navbar items={NAV_ITEMS} active={active} onSelect={(key) => setActive(key as Page)} />
-    </div>
+    </>
+  ) : (
+    <>
+      <Header title="Login" subtitle="Conecte-se para acessar suas tarefas" />
+      <Screen>
+        <LoginPage />
+      </Screen>
+    </>
   )
+
+  return <div style={styles.shell}>{showContent}</div>
 }
 
 const styles: Record<string, React.CSSProperties> = {
@@ -72,6 +103,11 @@ const styles: Record<string, React.CSSProperties> = {
     paddingBottom: 76, // espaço para a navbar fixa
     paddingTop: 76, // espaço para o header fixo
     fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
+  },
+  loading: {
+    marginTop: 120,
+    textAlign: 'center',
+    color: '#cbd5e1',
   },
 }
 

@@ -1,9 +1,11 @@
 type Props = {
   title: string
   subtitle?: string
+  user?: { name?: string | null; email?: string; picture?: string | null }
+  onLogout?: () => void
 }
 
-export default function Header({ title, subtitle }: Props) {
+export default function Header({ title, subtitle, user, onLogout }: Props) {
   return (
     <header style={styles.header}>
       <div style={styles.content}>
@@ -14,6 +16,24 @@ export default function Header({ title, subtitle }: Props) {
           <h1 style={styles.title}>{title}</h1>
           {subtitle ? <p style={styles.subtitle}>{subtitle}</p> : null}
         </div>
+
+        {user ? (
+          <div style={styles.userArea}>
+            {user.picture ? (
+              <img src={user.picture} alt={user.name || user.email} style={styles.avatar} />
+            ) : (
+              <div style={styles.avatarPlaceholder}>{(user.name || user.email || 'U').charAt(0).toUpperCase()}</div>
+            )}
+            <div style={styles.userText}>
+              <div style={styles.userName}>{user.name || user.email}</div>
+            </div>
+            {onLogout ? (
+              <button style={styles.logout} onClick={onLogout}>
+                Sair
+              </button>
+            ) : null}
+          </div>
+        ) : null}
       </div>
     </header>
   )
@@ -71,6 +91,50 @@ const styles: Record<string, React.CSSProperties> = {
     margin: 0,
     color: '#cbd5e1',
     fontSize: '14px',
+  },
+  userArea: {
+    position: 'absolute',
+    right: 12,
+    top: 12,
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+  },
+  avatar: {
+    width: 36,
+    height: 36,
+    borderRadius: '50%',
+    objectFit: 'cover',
+  },
+  avatarPlaceholder: {
+    width: 36,
+    height: 36,
+    borderRadius: '50%',
+    background: '#334155',
+    display: 'grid',
+    placeItems: 'center',
+    color: '#e2e8f0',
+    fontWeight: 700,
+  },
+  userText: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    color: '#cbd5e1',
+    fontSize: 12,
+  },
+  userName: {
+    fontWeight: 600,
+    color: '#e2e8f0',
+  },
+  logout: {
+    marginLeft: 8,
+    background: 'transparent',
+    border: '1px solid rgba(203,213,225,0.12)',
+    color: '#e2e8f0',
+    padding: '6px 8px',
+    borderRadius: 8,
+    cursor: 'pointer',
   },
 }
 
