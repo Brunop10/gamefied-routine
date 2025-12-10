@@ -491,8 +491,10 @@ class handler(BaseHTTPRequestHandler):
 
 if __name__ == "__main__":
     from http.server import HTTPServer
-    port = int(os.getenv("PORT", "3000"))
-    host = os.getenv("HOST", "0.0.0.0")
+    # Render detecta automaticamente a porta — sempre tenta PORT env var primeiro
+    # Se não estiver setado, usa 3000 (local) ou 8000 (fallback seguro)
+    port = int(os.getenv("PORT", os.getenv("PORT", "10000" if os.getenv("RENDER") else "3000")))
+    host = "0.0.0.0"  # sempre 0.0.0.0 em produção
     print(f"Starting server on {host}:{port}")
     HTTPServer((host, port), handler).serve_forever()
 
