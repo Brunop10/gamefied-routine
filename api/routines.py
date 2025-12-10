@@ -491,5 +491,8 @@ class handler(BaseHTTPRequestHandler):
 
 if __name__ == "__main__":
     from http.server import HTTPServer
-    HTTPServer(("localhost", 3000), handler).serve_forever()
+    port = int(os.getenv("PORT", "3000"))
+    host = os.getenv("HOST", "0.0.0.0")
+    print(f"Starting server on {host}:{port}")
+    HTTPServer((host, port), handler).serve_forever()
 
