@@ -162,7 +162,15 @@ class handler(BaseHTTPRequestHandler):
 
     def _is_secure(self) -> bool:
         proto = self.headers.get("X-Forwarded-Proto", "")
-        return proto == "https"
+        # Se X-Forwarded-Proto for "https", retorna True
+        if proto == "https":
+            return True
+        # Em produção (Vercel), o header pode não vir — detecta por hostname
+        host = self.headers.get("Host", "")
+        if host and ("vercel.app" in host or host == "localhost"):
+            # localhost = dev (http), vercel.app = produção (https)
+            return "vercel.app" in host
+        return False
 
     def _redirect(self, url: str, extra_headers: dict | None = None):
         self.send_response(302)
