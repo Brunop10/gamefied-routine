@@ -418,6 +418,8 @@ class handler(BaseHTTPRequestHandler):
     # -------- Dispatch HTTP --------
     def do_GET(self):
         path = self._parse_path()
+        if path == "/" or path == "/health":
+            return self._write_json(200, {"ok": True})
         if path == "/api/auth/google/start":
             return self._auth_start()
         if path == "/api/auth/google/callback":
