@@ -169,11 +169,16 @@ class handler(BaseHTTPRequestHandler):
         # Se X-Forwarded-Proto for "https", retorna True
         if proto == "https":
             return True
-        # Em produção (Vercel), o header pode não vir — detecta por hostname
-        host = self.headers.get("Host", "")
-        if host and ("vercel.app" in host or host == "localhost"):
-            # localhost = dev (http), vercel.app = produção (https)
-            return "vercel.app" in host
+        # Em produção, o header pode não vir — detecta por hostname
+        host = self.headers.get("Host", "").rstrip("/")
+        if not host:
+            return False
+        # localhost = dev (http)
+        if host == "localhost":
+            return False
+        # Hosts de produção que usam HTTPS (Vercel, Render)
+        if "vercel.app" in host or "onrender.com" in host or "render.com" in host:
+            return True
         return False
 
     def _redirect(self, url: str, extra_headers: dict | None = None):
@@ -223,7 +228,8 @@ class handler(BaseHTTPRequestHandler):
             "access_type": "online",
             "include_granted_scopes": "true",
         }
-        cookie_flags = "Path=/; HttpOnly; SameSite=Lax"
+        samesite = "None" if self._is_secure() else "Lax"
+        cookie_flags = f"Path=/; HttpOnly; SameSite={samesite}"
         if self._is_secure():
             cookie_flags += "; Secure"
         auth_url = f"{GOOGLE_AUTH_URL}?{urllib.parse.urlencode(params)}"
@@ -302,7 +308,8 @@ class handler(BaseHTTPRequestHandler):
             return
 
         token = self._jwt_sign({"uid": user_row[0], "email": user_row[1], "name": user_row[2]})
-        cookie_flags = "Path=/; HttpOnly; SameSite=Lax"
+        samesite = "None" if self._is_secure() else "Lax"
+        cookie_flags = f"Path=/; HttpOnly; SameSite={samesite}"
         if self._is_secure():
             cookie_flags += "; Secure"
         headers = {"Set-Cookie": f"session={token}; {cookie_flags}"}
@@ -328,7 +335,8 @@ class handler(BaseHTTPRequestHandler):
         self._write_json(200, {"ok": True, "user": {"id": user[0], "email": user[1], "name": user[2], "picture": user[3]}})
 
     def _logout(self):
-        cookie_flags = "Path=/; HttpOnly; SameSite=Lax; Max-Age=0"
+        samesite = "None" if self._is_secure() else "Lax"
+        cookie_flags = f"Path=/; HttpOnly; SameSite={samesite}; Max-Age=0"
         if self._is_secure():
             cookie_flags += "; Secure"
         self._write_json(200, {"ok": True}, headers={"Set-Cookie": f"session=; {cookie_flags}"})
