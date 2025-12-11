@@ -8,6 +8,7 @@ import SchedulePage from './pages/SchedulePage.tsx'
 import AchievementsPage from './pages/AchievementsPage'
 import LoginPage from './pages/LoginPage'
 import { getMe, logout, type User } from './auth/api'
+import Spinner from './components/Spinner'
 
 type Page = 'home' | 'tasks' | 'schedule' | 'achievements'
 
@@ -22,6 +23,7 @@ export default function AppLayout() {
   const [active, setActive] = useState<Page>('home')
   const [user, setUser] = useState<User | null>(null)
   const [authLoading, setAuthLoading] = useState(true)
+  const [logoutLoading, setLogoutLoading] = useState(false)
 
   useEffect(() => {
     void (async () => {
@@ -32,13 +34,17 @@ export default function AppLayout() {
   }, [])
 
   async function handleLogout() {
+    if (logoutLoading) return
+    setLogoutLoading(true)
     try {
       await logout()
     } catch (e) {
       // ignore
+    } finally {
+      setUser(null)
+      setActive('home')
+      setLogoutLoading(false)
     }
-    setUser(null)
-    setActive('home')
   }
 
   const content = useMemo(() => {
@@ -72,10 +78,18 @@ export default function AppLayout() {
   }, [active])
 
   const showContent = authLoading ? (
-    <div style={styles.loading}>Carregando...</div>
+    <div style={styles.loading}>
+      <Spinner />
+    </div>
   ) : user ? (
     <>
-      <Header title={content.title} subtitle={content.hint} user={user} onLogout={handleLogout} />
+      <Header
+        title={content.title}
+        subtitle={content.hint}
+        user={user}
+        onLogout={handleLogout}
+        logoutLoading={logoutLoading}
+      />
       <Screen>
         <PageComponent />
       </Screen>
@@ -106,8 +120,9 @@ const styles: Record<string, React.CSSProperties> = {
   },
   loading: {
     marginTop: 120,
-    textAlign: 'center',
-    color: '#cbd5e1',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 }
 

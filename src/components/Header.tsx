@@ -1,11 +1,14 @@
+import Spinner from './Spinner'
+
 type Props = {
   title: string
   subtitle?: string
   user?: { name?: string | null; email?: string; picture?: string | null }
   onLogout?: () => void
+  logoutLoading?: boolean
 }
 
-export default function Header({ title, subtitle, user, onLogout }: Props) {
+export default function Header({ title, subtitle, user, onLogout, logoutLoading }: Props) {
   return (
     <header style={styles.header}>
       <div style={styles.content}>
@@ -28,8 +31,13 @@ export default function Header({ title, subtitle, user, onLogout }: Props) {
               <div style={styles.userName}>{user.name || user.email}</div>
             </div>
             {onLogout ? (
-              <button style={styles.logout} onClick={onLogout}>
-                Sair
+              <button
+                style={styles.logout}
+                onClick={onLogout}
+                disabled={logoutLoading}
+                aria-busy={logoutLoading}
+              >
+                {logoutLoading ? <Spinner size={16} color="#e2e8f0" /> : 'Sair'}
               </button>
             ) : null}
           </div>
