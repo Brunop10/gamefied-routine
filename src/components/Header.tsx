@@ -37,7 +37,7 @@ export default function Header({ title, subtitle, user, onLogout, logoutLoading 
                 disabled={logoutLoading}
                 aria-busy={logoutLoading}
               >
-                {logoutLoading ? <Spinner size={16} color="#e2e8f0" /> : 'Sair'}
+                {logoutLoading ? <Spinner size={16} color="#e2e8f0" label='Saindo...' /> : 'Sair'}
               </button>
             ) : null}
           </div>

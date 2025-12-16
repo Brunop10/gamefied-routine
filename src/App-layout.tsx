@@ -79,7 +79,7 @@ export default function AppLayout() {
 
   const showContent = authLoading ? (
     <div style={styles.loading}>
-      <Spinner />
+      <Spinner label="Carregando sessão..." />
     </div>
   ) : user ? (
     <>

@@ -1,4 +1,5 @@
 import { type Task } from '../tasks/api'
+import Spinner from './Spinner'
 
 type Props = {
   tasks: Task[]
@@ -36,7 +37,9 @@ export default function TaskListCard({
       </div>
 
       {loading ? (
-        <p style={styles.textFaded}>Carregando...</p>
+        <div style={{ ...styles.textFaded, display: 'flex', justifyContent: 'center' }}>
+          <Spinner size={28} color="#38bdf8" label="Carregando tarefas..." />
+        </div>
       ) : items.length === 0 ? (
         <p style={styles.textFaded}>{emptyText}</p>
       ) : (
