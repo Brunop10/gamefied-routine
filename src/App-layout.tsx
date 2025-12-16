@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import Header from './components/Header'
+import SimpleFooter from './components/Footer.tsx'
 import Navbar, { type NavItem } from './components/Navbar'
 import Screen from './components/Screen'
 import HomePage from './pages/HomePage'
@@ -78,9 +79,13 @@ export default function AppLayout() {
   }, [active])
 
   const showContent = authLoading ? (
-    <div style={styles.loading}>
-      <Spinner label="Carregando sessão..." />
-    </div>
+    <>
+      <Header title="Gamefied Routine" subtitle="Carregando..." />
+      <div style={styles.loading}>
+        <Spinner label="Carregando sessão..." />
+      </div>
+      <SimpleFooter />
+    </>
   ) : user ? (
     <>
       <Header
@@ -97,10 +102,11 @@ export default function AppLayout() {
     </>
   ) : (
     <>
-      <Header title="Login" subtitle="Conecte-se para acessar suas tarefas" />
+      <Header title="Gamefied Routine" subtitle="Bem-vindo! Faça login para continuar." />
       <Screen>
         <LoginPage />
       </Screen>
+      <SimpleFooter />
     </>
   )
 
@@ -114,8 +120,8 @@ const styles: Record<string, React.CSSProperties> = {
     color: '#e2e8f0',
     display: 'flex',
     flexDirection: 'column',
-    paddingBottom: 76, // espaço para a navbar fixa
-    paddingTop: 76, // espaço para o header fixo
+    paddingBottom: 76, // espaço para o footer fixo
+    paddingTop: 76, // espaço para o header/navbar fixo
     fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
   },
   loading: {
@@ -123,6 +129,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
+    flex: 1,
   },
 }
 
