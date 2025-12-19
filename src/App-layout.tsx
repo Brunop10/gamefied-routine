@@ -51,15 +51,15 @@ export default function AppLayout() {
   const content = useMemo(() => {
     switch (active) {
       case 'home':
-        return { title: 'Home', hint: 'Visão geral e adicionar tarefa rápida.' }
+        return { title: 'Home' }
       case 'tasks':
-        return { title: 'Tarefas', hint: 'Liste, conclua e agende rotinas.' }
+        return { title: 'Tarefas' }
       case 'schedule':
-        return { title: 'Calendário', hint: 'Visão semanal das tarefas concluídas.' }
+        return { title: 'Calendário' }
       case 'achievements':
-        return { title: 'Conquistas', hint: 'Veja medalhas e progresso.' }
+        return { title: 'Conquistas' }
       default:
-        return { title: '', hint: '' }
+        return { title: '' }
     }
   }, [active])
 
@@ -80,7 +80,7 @@ export default function AppLayout() {
 
   const showContent = authLoading ? (
     <>
-      <Header title="Gamefied Routine" subtitle="Carregando..." />
+      <Header title="Gamefied Routine" />
       <div style={styles.loading}>
         <Spinner label="Carregando sessão..." />
       </div>
@@ -90,7 +90,6 @@ export default function AppLayout() {
     <>
       <Header
         title={content.title}
-        subtitle={content.hint}
         user={user}
         onLogout={handleLogout}
         logoutLoading={logoutLoading}
@@ -102,7 +101,7 @@ export default function AppLayout() {
     </>
   ) : (
     <>
-      <Header title="Gamefied Routine" subtitle="Bem-vindo! Faça login para continuar." />
+      <Header title="Gamefied Routine" />
       <Screen>
         <LoginPage />
       </Screen>
@@ -120,16 +119,16 @@ const styles: Record<string, React.CSSProperties> = {
     color: '#e2e8f0',
     display: 'flex',
     flexDirection: 'column',
-    paddingBottom: 76, 
-    paddingTop: 140, 
+    paddingBottom: 0, 
+    paddingTop: 64, 
     fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
   },
   loading: {
-    marginTop: 120,
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
     flex: 1,
+    backgroundColor: '#142e5770',
   },
 }
 

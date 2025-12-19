@@ -73,7 +73,7 @@ export default function TaskListCard({
                           onClick={() => onDelete(task)}
                           disabled={actioningId === task.id}
                         >
-                          🗑️
+                          ❌
                         </button>
                       ) : null}
                     </>

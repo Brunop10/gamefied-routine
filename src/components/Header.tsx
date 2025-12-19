@@ -3,13 +3,12 @@ import Spinner from './Spinner'
 
 type Props = {
   title: string
-  subtitle?: string
   user?: { name?: string | null; email?: string; picture?: string | null }
   onLogout?: () => void
   logoutLoading?: boolean
 }
 
-export default function Header({ title, subtitle, user, onLogout, logoutLoading }: Props) {
+export default function Header({ title, user, onLogout, logoutLoading }: Props) {
   const [isMobile, setIsMobile] = useState(false)
   const [userOpen, setUserOpen] = useState(false)
 
@@ -17,7 +16,6 @@ export default function Header({ title, subtitle, user, onLogout, logoutLoading 
     const mq = window.matchMedia('(max-width: 640px)')
     const update = () => {
       setIsMobile(mq.matches)
-      setUserOpen(!mq.matches) 
     }
     update()
     mq.addEventListener('change', update)
@@ -33,7 +31,6 @@ export default function Header({ title, subtitle, user, onLogout, logoutLoading 
           </div>
           <div style={styles.titles}>
             <h1 style={styles.title}>{title}</h1>
-            {subtitle ? <p style={styles.subtitle}>{subtitle}</p> : null}
           </div>
 
           {user ? (
@@ -122,21 +119,16 @@ const styles: Record<string, React.CSSProperties> = {
   },
   title: {
     margin: 0,
-    fontSize: '22px',
+    fontSize: '20px',
     fontWeight: 700,
     letterSpacing: 0.2,
   },
   titles: {
     display: 'flex',
     flexDirection: 'column',
-    gap: 2,
+    gap: 5,
     alignItems: 'center',
     width: '100%',
-  },
-  subtitle: {
-    margin: 0,
-    color: '#cbd5e1',
-    fontSize: '14px',
   },
   userArea: {
     position: 'absolute',
@@ -204,15 +196,15 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '8px 10px',
   },
   subheader: {
-    position: 'fixed',
-    top: 64,
+    position: 'relative',
+    top: 1,
     left: 0,
     right: 0,
     width: '100%',
     background: '#0b1220',
     borderBottom: '1px solid #1f2937',
     boxShadow: '0 8px 24px rgba(0,0,0,0.35)',
-    zIndex: 9,
+    zIndex: 1,
   },
   subheaderInner: {
     display: 'flex',
