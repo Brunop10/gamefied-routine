@@ -8,7 +8,13 @@ export default function Screen({ children }: Props) {
 
 const styles: Record<string, React.CSSProperties> = {
   main: {
+    width: '100%',
+    maxWidth: '100%',
+    boxSizing: 'border-box',
+    flex: 1,
+    display: 'block',
     padding: '12px 16px',
+    backgroundColor: '#142e5770',
   },
 }
 
