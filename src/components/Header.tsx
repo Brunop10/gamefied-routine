@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import Spinner from './Spinner'
 
 type Props = {
@@ -9,26 +10,62 @@ type Props = {
 }
 
 export default function Header({ title, subtitle, user, onLogout, logoutLoading }: Props) {
-  return (
-    <header style={styles.header}>
-      <div style={styles.content}>
-        <div style={styles.brandCircle} aria-hidden>
-          🌀
-        </div>
-        <div style={styles.titles}>
-          <h1 style={styles.title}>{title}</h1>
-          {subtitle ? <p style={styles.subtitle}>{subtitle}</p> : null}
-        </div>
+  const [isMobile, setIsMobile] = useState(false)
+  const [userOpen, setUserOpen] = useState(false)
 
-        {user ? (
-          <div style={styles.userArea}>
-            {user.picture ? (
-              <img src={user.picture} alt={user.name || user.email} style={styles.avatar} />
-            ) : (
-              <div style={styles.avatarPlaceholder}>{(user.name || user.email || 'U').charAt(0).toUpperCase()}</div>
-            )}
-            <div style={styles.userText}>
-              <div style={styles.userName}>{user.name || user.email}</div>
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 640px)')
+    const update = () => {
+      setIsMobile(mq.matches)
+      setUserOpen(!mq.matches) 
+    }
+    update()
+    mq.addEventListener('change', update)
+    return () => mq.removeEventListener('change', update)
+  }, [])
+
+  return (
+    <>
+      <header style={styles.header}>
+        <div style={styles.content}>
+          <div style={styles.brandCircle} aria-hidden>
+            🌀
+          </div>
+          <div style={styles.titles}>
+            <h1 style={styles.title}>{title}</h1>
+            {subtitle ? <p style={styles.subtitle}>{subtitle}</p> : null}
+          </div>
+
+          {user ? (
+            <button
+              type="button"
+              style={{ ...styles.toggle, ...(isMobile ? styles.toggleMobile : null) }}
+              onClick={() => setUserOpen((v) => !v)}
+              aria-expanded={userOpen}
+              aria-label={userOpen ? 'Ocultar informações da conta' : 'Mostrar informações da conta'}
+            >
+              <span style={styles.toggleIcon}>👤</span>
+              {userOpen ? '▴' : '▾'}
+            </button>
+          ) : null}
+        </div>
+      </header>
+
+      {user && userOpen ? (
+        <div style={styles.subheader}>
+          <div style={styles.subheaderInner}>
+            <div style={styles.subLeft}>
+              {user.picture ? (
+                <img src={user.picture} alt={user.name || user.email} style={styles.avatar} />
+              ) : (
+                <div style={styles.avatarPlaceholder}>{(user.name || user.email || 'U').charAt(0).toUpperCase()}</div>
+              )}
+              <div style={styles.userText}>
+                <div style={styles.userName}>{user.name || user.email}</div>
+                {user.email && user.email !== user.name ? (
+                  <div style={styles.userEmail}>{user.email}</div>
+                ) : null}
+              </div>
             </div>
             {onLogout ? (
               <button
@@ -41,9 +78,9 @@ export default function Header({ title, subtitle, user, onLogout, logoutLoading 
               </button>
             ) : null}
           </div>
-        ) : null}
-      </div>
-    </header>
+        </div>
+      ) : null}
+    </>
   )
 }
 
@@ -69,6 +106,7 @@ const styles: Record<string, React.CSSProperties> = {
     justifyContent: 'center',
     width: '100%',
     textAlign: 'center',
+    gap: 12,
   },
   brandCircle: {
     position: 'absolute',
@@ -143,6 +181,57 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '6px 8px',
     borderRadius: 8,
     cursor: 'pointer',
+  },
+  toggle: {
+    background: 'transparent',
+    border: '1px solid rgba(203,213,225,0.25)',
+    color: '#e2e8f0',
+    padding: '8px 12px',
+    borderRadius: 10,
+    cursor: 'pointer',
+    fontWeight: 700,
+    fontSize: 13,
+    display: 'flex',
+    alignItems: 'center',
+    gap: 6,
+  },
+  toggleIcon: {
+    fontSize: 16,
+    display: 'flex',
+    alignItems: 'center',
+  },
+  toggleMobile: {
+    padding: '8px 10px',
+  },
+  subheader: {
+    position: 'fixed',
+    top: 64,
+    left: 0,
+    right: 0,
+    width: '100%',
+    background: '#0b1220',
+    borderBottom: '1px solid #1f2937',
+    boxShadow: '0 8px 24px rgba(0,0,0,0.35)',
+    zIndex: 9,
+  },
+  subheaderInner: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    padding: '12px 16px',
+    flexWrap: 'wrap',
+  },
+  subLeft: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 10,
+    minWidth: 0,
+    flex: 1,
+  },
+  userEmail: {
+    color: '#94a3b8',
+    fontSize: 12,
   },
 }
 

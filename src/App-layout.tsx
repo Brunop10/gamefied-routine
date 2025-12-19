@@ -120,8 +120,8 @@ const styles: Record<string, React.CSSProperties> = {
     color: '#e2e8f0',
     display: 'flex',
     flexDirection: 'column',
-    paddingBottom: 76, // espaço para o footer fixo
-    paddingTop: 76, // espaço para o header/navbar fixo
+    paddingBottom: 76, 
+    paddingTop: 140, 
     fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
   },
   loading: {
