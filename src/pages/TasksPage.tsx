@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { deleteTask, listTasks, updateTask, type Task } from '../tasks/api'
+import { deleteTask, listTasks, updateTask, updateTaskStatus, type Task } from '../tasks/api'
 import TaskListCard from '../components/TaskListCard'
 
 export default function TasksPage() {
@@ -40,6 +40,24 @@ export default function TasksPage() {
     }
   }
 
+  const handleToggleStatus = async (task: Task) => {
+    const newStatus = task.status === 'pendente' ? 'feita' : 'pendente'
+    console.log('Toggling status:', { taskId: task.id, currentStatus: task.status, newStatus })
+    setActionId(task.id)
+    setMessage(null)
+    try {
+      const updated = await updateTaskStatus(task.id, newStatus)
+      console.log('Updated task:', updated)
+      setTasks((prev) => prev.map((t) => (t.id === task.id ? updated : t)))
+      setMessage({ type: 'ok', text: `Tarefa marcada como ${updated.status}.` })
+    } catch (e) {
+      console.error('Error updating status:', e)
+      setMessage({ type: 'error', text: (e as Error).message || 'Erro ao atualizar status.' })
+    } finally {
+      setActionId(null)
+    }
+  }
+
   const handleDelete = async (task: Task) => {
     if (!window.confirm('Remover esta tarefa?')) return
     setActionId(task.id)
@@ -72,11 +90,12 @@ export default function TasksPage() {
         tasks={tasks}
         loading={loading}
         title='Minhas tarefas'
-        description='Editar ou remover diretamente.'
+        description='Editar, marcar como concluída ou remover.'
         limit={9999}
         actioningId={actionId}
         onEdit={handleEdit}
         onDelete={handleDelete}
+        onToggleStatus={handleToggleStatus}
         emptyText='Nenhuma tarefa encontrada.'
       />
     </div>

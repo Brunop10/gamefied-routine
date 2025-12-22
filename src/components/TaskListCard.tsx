@@ -11,6 +11,7 @@ type Props = {
   actioningId?: number | null
   onEdit?: (task: Task) => void
   onDelete?: (task: Task) => void
+  onToggleStatus?: (task: Task) => void
   renderActions?: (task: Task) => React.ReactNode
 }
 
@@ -24,10 +25,11 @@ export default function TaskListCard({
   actioningId = null,
   onEdit,
   onDelete,
+  onToggleStatus,
   renderActions,
 }: Props) {
   const items = tasks.slice(0, limit)
-  const hasActions = Boolean(onEdit || onDelete || renderActions)
+  const hasActions = Boolean(onEdit || onDelete || onToggleStatus || renderActions)
 
   return (
     <section style={styles.card}>
@@ -46,9 +48,19 @@ export default function TaskListCard({
         <ul style={styles.list}>
           {items.map((task) => (
             <li key={task.id} style={styles.listItem}>
-              <div>
-                <div style={styles.taskTitle}>{task.title}</div>
-                <div style={styles.muted}>{new Date(task.created_at).toLocaleString()}</div>
+              <div style={styles.taskContent}>
+                <div
+                  style={{
+                    ...styles.statusIndicator,
+                    backgroundColor: task.status === 'feita' ? '#22c55e' : '#fb923c',
+                  }}
+                />
+                <div>
+                  <div style={styles.taskTitle}>{task.title}</div>
+                  <div style={styles.muted}>
+                    {new Date(task.created_at).toLocaleString()} • {task.status === 'feita' ? 'Concluída' : 'Pendente'}
+                  </div>
+                </div>
               </div>
               {hasActions ? (
                 <div style={styles.actions}>
@@ -56,6 +68,23 @@ export default function TaskListCard({
                     renderActions(task)
                   ) : (
                     <>
+                      {onToggleStatus ? (
+                        <button
+                          type='button'
+                          style={{
+                            ...styles.actionButton,
+                            backgroundColor: task.status === 'feita' ? '#fb923c' : '#22c55e',
+                            color: '#0b1220',
+                            border: 'none',
+                            fontWeight: 600,
+                          }}
+                          onClick={() => onToggleStatus(task)}
+                          disabled={actioningId === task.id}
+                          title={task.status === 'feita' ? 'Marcar como pendente' : 'Marcar como feita'}
+                        >
+                          {task.status === 'feita' ? '↩️' : '✓'}
+                        </button>
+                      ) : null}
                       {onEdit ? (
                         <button
                           type='button'
@@ -144,6 +173,17 @@ const styles: Record<string, React.CSSProperties> = {
     color: '#e2e8f0',
     fontSize: 14,
   },
+  taskContent: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 12,
+  },
+  statusIndicator: {
+    width: 10,
+    height: 10,
+    borderRadius: '999px',
+    flexShrink: 0,
+  },
   taskTitle: {
     fontWeight: 600,
   },
@@ -163,6 +203,7 @@ const styles: Record<string, React.CSSProperties> = {
     color: '#e2e8f0',
     padding: '6px 10px',
     cursor: 'pointer',
+    transition: 'all 0.2s',
   },
 }
 

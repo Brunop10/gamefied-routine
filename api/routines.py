@@ -36,6 +36,7 @@ CREATE TABLE IF NOT EXISTS routines (
   id SERIAL PRIMARY KEY,
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   title TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pendente' CHECK (status IN ('pendente', 'feita')),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 """
@@ -48,7 +49,7 @@ class handler(BaseHTTPRequestHandler):
         origin = self.headers.get("Origin", "*")
         self.send_header("Access-Control-Allow-Origin", origin)
         self.send_header("Access-Control-Allow-Credentials", "true")
-        self.send_header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
 
     def _write_json(self, status: int, payload: dict, headers: dict | None = None):
@@ -348,11 +349,11 @@ class handler(BaseHTTPRequestHandler):
                 with conn.cursor() as cur:
                     self._ensure_schema(cur)
                     cur.execute(
-                        "SELECT id, title, created_at FROM routines WHERE user_id = %s ORDER BY created_at DESC",
+                        "SELECT id, title, status, created_at FROM routines WHERE user_id = %s ORDER BY created_at DESC",
                         (user["uid"],),
                     )
                     rows = cur.fetchall()
-            items = [{"id": r[0], "title": r[1], "created_at": r[2].isoformat()} for r in rows]
+            items = [{"id": r[0], "title": r[1], "status": r[2], "created_at": r[3].isoformat()} for r in rows]
             self._write_json(200, {"ok": True, "items": items})
         except Exception as e:
             self._write_json(500, {"ok": False, "error": str(e)})
@@ -367,14 +368,14 @@ class handler(BaseHTTPRequestHandler):
                 with conn.cursor() as cur:
                     self._ensure_schema(cur)
                     cur.execute(
-                        "INSERT INTO routines(user_id, title) VALUES(%s, %s) RETURNING id, created_at",
+                        "INSERT INTO routines(user_id, title) VALUES(%s, %s) RETURNING id, status, created_at",
                         (user["uid"], title),
                     )
                     inserted = cur.fetchone()
                     conn.commit()
             self._write_json(201, {
                 "ok": True,
-                "item": {"id": inserted[0], "title": title, "created_at": inserted[1].isoformat()},
+                "item": {"id": inserted[0], "title": title, "status": inserted[1], "created_at": inserted[2].isoformat()},
             })
         except Exception as e:
             self._write_json(500, {"ok": False, "error": str(e)})
@@ -393,7 +394,7 @@ class handler(BaseHTTPRequestHandler):
                 with conn.cursor() as cur:
                     self._ensure_schema(cur)
                     cur.execute(
-                        "UPDATE routines SET title = %s WHERE id = %s AND user_id = %s RETURNING id, title, created_at",
+                        "UPDATE routines SET title = %s WHERE id = %s AND user_id = %s RETURNING id, title, status, created_at",
                         (title, rid, user["uid"]),
                     )
                     row = cur.fetchone()
@@ -401,7 +402,33 @@ class handler(BaseHTTPRequestHandler):
             if not row:
                 self._write_json(404, {"ok": False, "error": "rotina não encontrada"})
                 return
-            self._write_json(200, {"ok": True, "item": {"id": row[0], "title": row[1], "created_at": row[2].isoformat()}})
+            self._write_json(200, {"ok": True, "item": {"id": row[0], "title": row[1], "status": row[2], "created_at": row[3].isoformat()}})
+        except Exception as e:
+            self._write_json(500, {"ok": False, "error": str(e)})
+
+    def _update_routine_status(self, user, payload):
+        try:
+            rid = int(payload.get("id"))
+        except Exception:
+            rid = 0
+        status = payload.get("status")
+        if rid <= 0 or status not in ("pendente", "feita"):
+            self._write_json(400, {"ok": False, "error": "id e status válido são obrigatórios"})
+            return
+        try:
+            with self._connect() as conn:
+                with conn.cursor() as cur:
+                    self._ensure_schema(cur)
+                    cur.execute(
+                        "UPDATE routines SET status = %s WHERE id = %s AND user_id = %s RETURNING id, title, status, created_at",
+                        (status, rid, user["uid"]),
+                    )
+                    row = cur.fetchone()
+                    conn.commit()
+            if not row:
+                self._write_json(404, {"ok": False, "error": "rotina não encontrada"})
+                return
+            self._write_json(200, {"ok": True, "item": {"id": row[0], "title": row[1], "status": row[2], "created_at": row[3].isoformat()}})
         except Exception as e:
             self._write_json(500, {"ok": False, "error": str(e)})
 
@@ -493,6 +520,21 @@ class handler(BaseHTTPRequestHandler):
             if not user:
                 return
             return self._delete_routine(user, payload)
+        self._write_json(404, {"ok": False, "error": "not found"})
+
+    def do_PATCH(self):
+        path = self._parse_path()
+        length = int(self.headers.get("Content-Length", "0"))
+        raw = self.rfile.read(length) if length > 0 else b"{}"
+        try:
+            payload = json.loads(raw.decode("utf-8"))
+        except Exception:
+            payload = {}
+        if path == "/api/routines/status":
+            user = self._require_user()
+            if not user:
+                return
+            return self._update_routine_status(user, payload)
         self._write_json(404, {"ok": False, "error": "not found"})
 
     def do_OPTIONS(self):

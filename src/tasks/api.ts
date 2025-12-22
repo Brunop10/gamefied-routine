@@ -1,6 +1,11 @@
 export type TaskInput = { title: string }
-export type Task = { id: number; title: string; created_at: string }
-export type TaskUpdateInput = { id: number; title: string }
+export type Task = { 
+  id: number; 
+  title: string; 
+  status: 'pendente' | 'feita';
+  created_at: string 
+}
+export type TaskUpdateInput = { id: number; title: string; status?: 'pendente' | 'feita' }
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || ''
 
@@ -53,5 +58,15 @@ export async function deleteTask(id: number): Promise<number> {
     body: JSON.stringify({ id }),
   })
   return data.deleted_id
+}
+
+export async function updateTaskStatus(id: number, status: 'pendente' | 'feita'): Promise<Task> {
+  if (!id) throw new Error('Id é obrigatório')
+
+  const data = await request<{ ok: boolean; item: Task }>('/api/routines/status', {
+    method: 'PATCH',
+    body: JSON.stringify({ id, status }),
+  })
+  return data.item
 }
 

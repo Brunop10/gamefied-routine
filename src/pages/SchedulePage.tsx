@@ -49,9 +49,16 @@ export default function SchedulePage() {
   const selectedDateKey = formatDateKey(selectedDate)
 
   const tasksByDay = useMemo(() => {
-    return tasks.reduce<Record<string, number>>((acc, task) => {
+    return tasks.reduce<Record<string, { pendente: number; feita: number }>>((acc, task) => {
       const key = dateKeyFromString(task.created_at)
-      acc[key] = (acc[key] || 0) + 1
+      if (!acc[key]) {
+        acc[key] = { pendente: 0, feita: 0 }
+      }
+      if (task.status === 'pendente') {
+        acc[key].pendente += 1
+      } else if (task.status === 'feita') {
+        acc[key].feita += 1
+      }
       return acc
     }, {})
   }, [tasks])
@@ -130,7 +137,9 @@ export default function SchedulePage() {
         date.getFullYear() === today.getFullYear()
       
       const isSelected = formatDateKey(date) === selectedDateKey
-      const tasksCount = tasksByDay[formatDateKey(date)] || 0
+      const dayTasks = tasksByDay[formatDateKey(date)]
+      const pendenteCount = dayTasks?.pendente || 0
+      const feitaCount = dayTasks?.feita || 0
 
       days.push(
         <button
@@ -146,9 +155,14 @@ export default function SchedulePage() {
           onClick={() => handleDayClick(date)}
         >
           <span>{day}</span>
-          {tasksCount > 0 ? (
-            <span style={styles.taskBadge}>{tasksCount}</span>
-          ) : null}
+          <div style={styles.badgeContainer}>
+            {pendenteCount > 0 && (
+              <span style={styles.taskBadgePendente}>{pendenteCount}</span>
+            )}
+            {feitaCount > 0 && (
+              <span style={styles.taskBadgeFeita}>{feitaCount}</span>
+            )}
+          </div>
         </button>
       )
     }
@@ -209,9 +223,17 @@ export default function SchedulePage() {
           <ul style={styles.taskList}>
             {tasksForSelectedDay.map(task => (
               <li key={task.id} style={styles.taskItem}>
-                <div>
-                  <p style={styles.taskTitle}>{task.title}</p>
-                  <p style={styles.taskTime}>Criada em {formatHumanDate(new Date(task.created_at))}</p>
+                <div style={styles.taskContent}>
+                  <div style={{
+                    ...styles.statusIndicator,
+                    backgroundColor: task.status === 'feita' ? '#22c55e' : '#fb923c'
+                  }} />
+                  <div>
+                    <p style={styles.taskTitle}>{task.title}</p>
+                    <p style={styles.taskTime}>
+                      Criada em {formatHumanDate(new Date(task.created_at))} • {task.status === 'feita' ? 'Concluída' : 'Pendente'}
+                    </p>
+                  </div>
                 </div>
               </li>
             ))}
@@ -303,6 +325,7 @@ const styles: Record<string, React.CSSProperties> = {
   day: {
     aspectRatio: '1',
     display: 'flex',
+    flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
     color: '#cbd5e1',
@@ -315,6 +338,7 @@ const styles: Record<string, React.CSSProperties> = {
     width: '100%',
     outline: 'none',
     position: 'relative',
+    gap: '4px',
   },
   dayHover: {
     background: '#1e293b',
@@ -332,16 +356,30 @@ const styles: Record<string, React.CSSProperties> = {
     border: '1px solid #3b82f6',
     boxShadow: '0 0 0 3px rgba(59, 130, 246, 0.3)',
   },
-  taskBadge: {
-    position: 'absolute',
-    bottom: '6px',
-    right: '6px',
+  badgeContainer: {
+    display: 'flex',
+    gap: '4px',
+    alignItems: 'center',
+  },
+  taskBadgePendente: {
+    background: '#fb923c',
+    color: '#0b1220',
+    borderRadius: '999px',
+    padding: '2px 6px',
+    fontSize: '11px',
+    fontWeight: 700,
+    minWidth: '20px',
+    textAlign: 'center',
+  },
+  taskBadgeFeita: {
     background: '#22c55e',
     color: '#0b1220',
     borderRadius: '999px',
-    padding: '2px 8px',
-    fontSize: '12px',
+    padding: '2px 6px',
+    fontSize: '11px',
     fontWeight: 700,
+    minWidth: '20px',
+    textAlign: 'center',
   },
   tasksPanel: {
     marginTop: '24px',
@@ -413,9 +451,17 @@ const styles: Record<string, React.CSSProperties> = {
     background: '#111827',
     borderRadius: '10px',
     border: '1px solid #1f2937',
+  },
+  taskContent: {
     display: 'flex',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    gap: '12px',
+  },
+  statusIndicator: {
+    width: '10px',
+    height: '10px',
+    borderRadius: '999px',
+    flexShrink: 0,
   },
   taskTitle: {
     margin: 0,

@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS routines (
   id SERIAL PRIMARY KEY,
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   title TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pendente' CHECK (status IN ('pendente', 'feita')),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 """
@@ -38,7 +39,11 @@ def main():
     try:
         with psycopg.connect(url) as conn:
             with conn.cursor() as cur:
-                print("Applying schema...")
+                print("Dropping existing tables...")
+                cur.execute("DROP TABLE IF EXISTS routines CASCADE;")
+                cur.execute("DROP TABLE IF EXISTS users CASCADE;")
+                
+                print("Creating new schema...")
                 cur.execute(USERS_TABLE_SQL)
                 cur.execute(ROUTINES_TABLE_SQL)
                 conn.commit()
