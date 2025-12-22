@@ -1,10 +1,79 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { listTasks, type Task } from '../tasks/api'
 
 export default function SchedulePage() {
   const today = new Date()
   const [currentMonth, setCurrentMonth] = useState(today.getMonth())
   const [currentYear, setCurrentYear] = useState(today.getFullYear())
   const [hoveredDay, setHoveredDay] = useState<number | null>(null)
+  const [selectedDate, setSelectedDate] = useState<Date>(today)
+  const [tasks, setTasks] = useState<Task[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let active = true
+    setLoading(true)
+    listTasks()
+      .then(items => {
+        if (!active) return
+        setTasks(items)
+        setError(null)
+      })
+      .catch(err => {
+        if (!active) return
+        setError(err.message || 'Erro ao buscar tarefas')
+      })
+      .finally(() => {
+        if (!active) return
+        setLoading(false)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [])
+
+  const formatDateKey = (date: Date) => {
+    const y = date.getFullYear()
+    const m = String(date.getMonth() + 1).padStart(2, '0')
+    const d = String(date.getDate()).padStart(2, '0')
+    return `${y}-${m}-${d}`
+  }
+
+  const dateKeyFromString = (iso: string) => {
+    const parsed = new Date(iso)
+    return formatDateKey(parsed)
+  }
+
+  const selectedDateKey = formatDateKey(selectedDate)
+
+  const tasksByDay = useMemo(() => {
+    return tasks.reduce<Record<string, number>>((acc, task) => {
+      const key = dateKeyFromString(task.created_at)
+      acc[key] = (acc[key] || 0) + 1
+      return acc
+    }, {})
+  }, [tasks])
+
+  const tasksForSelectedDay = useMemo(() => {
+    return tasks.filter(task => dateKeyFromString(task.created_at) === selectedDateKey)
+  }, [selectedDateKey, tasks])
+
+  const handleDayClick = (date: Date) => {
+    setSelectedDate(date)
+    setCurrentMonth(date.getMonth())
+    setCurrentYear(date.getFullYear())
+  }
+
+  const formatHumanDate = (date: Date) => {
+    return new Intl.DateTimeFormat('pt-BR', {
+      weekday: 'short',
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric',
+    }).format(date)
+  }
   
   const monthNames = [
     'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -49,12 +118,10 @@ export default function SchedulePage() {
     const firstDay = getFirstDayOfMonth(currentMonth, currentYear)
     const days = []
     
-    // Adicionar dias vazios antes do primeiro dia
     for (let i = 0; i < firstDay; i++) {
       days.push(<div key={`empty-${i}`} style={styles.emptyDay}></div>)
     }
     
-    // Adicionar os dias do mês
     for (let day = 1; day <= daysInMonth; day++) {
       const date = new Date(currentYear, currentMonth, day)
       const isToday = 
@@ -62,19 +129,27 @@ export default function SchedulePage() {
         date.getMonth() === today.getMonth() &&
         date.getFullYear() === today.getFullYear()
       
+      const isSelected = formatDateKey(date) === selectedDateKey
+      const tasksCount = tasksByDay[formatDateKey(date)] || 0
+
       days.push(
-        <div 
-          key={day} 
+        <button
+          key={day}
           style={{
             ...styles.day,
             ...(isToday ? styles.today : {}),
-            ...(hoveredDay === day ? styles.dayHover : {})
+            ...(isSelected ? styles.selectedDay : {}),
+            ...(hoveredDay === day ? styles.dayHover : {}),
           }}
           onMouseEnter={() => setHoveredDay(day)}
           onMouseLeave={() => setHoveredDay(null)}
+          onClick={() => handleDayClick(date)}
         >
-          {day}
-        </div>
+          <span>{day}</span>
+          {tasksCount > 0 ? (
+            <span style={styles.taskBadge}>{tasksCount}</span>
+          ) : null}
+        </button>
       )
     }
     
@@ -115,6 +190,34 @@ export default function SchedulePage() {
         </div>
       </div>
       {renderMonth()}
+      <div style={styles.tasksPanel}>
+        <div style={styles.tasksHeader}>
+          <div>
+            <p style={styles.tasksSubtitle}>Tarefas em</p>
+            <h2 style={styles.tasksTitle}>{formatHumanDate(selectedDate)}</h2>
+          </div>
+          <span style={styles.tasksCount}>{tasksForSelectedDay.length} tarefas</span>
+        </div>
+
+        {loading ? (
+          <div style={styles.loadingBox}>Carregando tarefas...</div>
+        ) : error ? (
+          <div style={styles.errorBox}>{error}</div>
+        ) : tasksForSelectedDay.length === 0 ? (
+          <div style={styles.emptyTasks}>Nenhuma tarefa para este dia.</div>
+        ) : (
+          <ul style={styles.taskList}>
+            {tasksForSelectedDay.map(task => (
+              <li key={task.id} style={styles.taskItem}>
+                <div>
+                  <p style={styles.taskTitle}>{task.title}</p>
+                  <p style={styles.taskTime}>Criada em {formatHumanDate(new Date(task.created_at))}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </div>
   )
 }
@@ -208,6 +311,10 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: 'pointer',
     transition: 'all 0.2s',
     border: '1px solid transparent',
+    background: 'transparent',
+    width: '100%',
+    outline: 'none',
+    position: 'relative',
   },
   dayHover: {
     background: '#1e293b',
@@ -220,6 +327,106 @@ const styles: Record<string, React.CSSProperties> = {
     background: '#3b82f6',
     color: '#fff',
     fontWeight: 'bold',
+  },
+  selectedDay: {
+    border: '1px solid #3b82f6',
+    boxShadow: '0 0 0 3px rgba(59, 130, 246, 0.3)',
+  },
+  taskBadge: {
+    position: 'absolute',
+    bottom: '6px',
+    right: '6px',
+    background: '#22c55e',
+    color: '#0b1220',
+    borderRadius: '999px',
+    padding: '2px 8px',
+    fontSize: '12px',
+    fontWeight: 700,
+  },
+  tasksPanel: {
+    marginTop: '24px',
+    marginBottom: '40px',
+    padding: '20px',
+    borderRadius: '12px',
+    border: '1px solid #1e293b',
+    background: 'linear-gradient(180deg, #0f172a 0%, #0b1220 100%)',
+  },
+  tasksHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: '16px',
+    marginBottom: '12px',
+  },
+  tasksSubtitle: {
+    margin: 0,
+    color: '#94a3b8',
+    fontSize: '14px',
+    fontWeight: 500,
+  },
+  tasksTitle: {
+    margin: 0,
+    color: '#e2e8f0',
+    fontSize: '22px',
+    fontWeight: 700,
+    textTransform: 'capitalize',
+  },
+  tasksCount: {
+    background: '#1e293b',
+    color: '#e2e8f0',
+    borderRadius: '999px',
+    padding: '8px 14px',
+    fontSize: '14px',
+    border: '1px solid #334155',
+  },
+  loadingBox: {
+    padding: '12px 14px',
+    color: '#cbd5e1',
+    background: '#111827',
+    borderRadius: '8px',
+    border: '1px solid #1f2937',
+  },
+  errorBox: {
+    padding: '12px 14px',
+    color: '#fecdd3',
+    background: '#1f172a',
+    borderRadius: '8px',
+    border: '1px solid #7f1d1d',
+  },
+  emptyTasks: {
+    padding: '12px 14px',
+    color: '#94a3b8',
+    background: '#0b1220',
+    borderRadius: '8px',
+    border: '1px dashed #1e293b',
+  },
+  taskList: {
+    listStyle: 'none',
+    padding: 0,
+    margin: 0,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '10px',
+  },
+  taskItem: {
+    padding: '12px 14px',
+    background: '#111827',
+    borderRadius: '10px',
+    border: '1px solid #1f2937',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  taskTitle: {
+    margin: 0,
+    color: '#e2e8f0',
+    fontSize: '16px',
+    fontWeight: 600,
+  },
+  taskTime: {
+    margin: 0,
+    color: '#94a3b8',
+    fontSize: '13px',
   },
 }
 
